@@ -5,8 +5,8 @@ import pandas as pd
 import streamlit as st
 import plotly.express as px
 
-st.set_page_config(page_title="CAMCO Station Temperature Graph App", layout="wide")
-st.title("📈 CAMCO Station Temperature Graph App")
+st.set_page_config(page_title="Interactive Temperature Explorer", layout="wide")
+st.title("📈 Interactive Temperature Explorer")
 
 @st.cache_data(show_spinner=False)
 def load_csv_clean(file_or_path, parse_dates=None):
@@ -22,11 +22,6 @@ def load_csv_clean(file_or_path, parse_dates=None):
     if df_local is None:
         df_local = pd.read_csv(file_or_path, encoding="cp1252", parse_dates=parse_dates, encoding_errors="replace")
         st.warning(f"Loaded with encoding='cp1252' and encoding_errors='replace' due to: {last_err}")
-    
-    # Rename 'Staion' to 'Station' if it exists
-    df_local = df_local.rename(columns={"Staion": "Station"})
-    
-    # Clean column names
     df_local.columns = df_local.columns.astype(str).str.replace("\xa0", " ", regex=False).str.strip()
     for col in df_local.select_dtypes(include="object").columns:
         df_local[col] = df_local[col].str.replace("\xa0", " ", regex=False).str.strip()
@@ -46,33 +41,30 @@ def to_time_label(colname: str) -> str:
     return colname
 
 def to_long(df: pd.DataFrame) -> pd.DataFrame:
-    required_id_cols = ["Date", "Station", "Common Location", "Location", "Line"]
+    if "Station" not in df.columns and "Staion" in df.columns:
+        df = df.rename(columns={"Staion": "Station"})
+    elif "Station" in df.columns and "Staion" in df.columns:
+        df = df.drop(columns=["Staion"])
+    required_id_cols = ["Date", "Station", "Common Location", "Location"]
     missing = [c for c in required_id_cols if c not in df.columns]
     if missing:
         raise KeyError(f"Missing required column(s): {missing}.")
-    
     if not np.issubdtype(df["Date"].dtype, np.datetime64):
         df["Date"] = pd.to_datetime(df["Date"], errors="coerce")
-    
     bms_cols = [c for c in ["0700_BMS", "1100_BMS", "1400_BMS", "1600_BMS", "1800_BMS", "2100_BMS"] if c in df.columns]
     manual_cols = [c for c in ["Manual07", "Manual11", "Manual14", "Manual16", "Manual18", "Manual21"] if c in df.columns]
-    
     if not bms_cols and not manual_cols:
         raise KeyError("None of the expected reading columns were found.")
-    
-    id_vars = ["Date", "Station", "Common Location", "Location", "Line"]
+    id_vars = ["Date", "Station", "Common Location", "Location"]
     frames = []
-    
     if manual_cols:
         m = df.melt(id_vars=id_vars, value_vars=manual_cols, var_name="Time", value_name="Value")
         m["Source"] = "Manual"
         frames.append(m)
-    
     if bms_cols:
         b = df.melt(id_vars=id_vars, value_vars=bms_cols, var_name="Time", value_name="Value")
         b["Source"] = "BMS"
         frames.append(b)
-    
     out = pd.concat(frames, ignore_index=True)
     out["Value"] = pd.to_numeric(out["Value"], errors="coerce")
     out = out.dropna(subset=["Value", "Date"])
@@ -106,11 +98,6 @@ sources = sorted(df_long["Source"].unique().tolist())
 sel_sources = st.sidebar.multiselect("Source", sources, default=sources)
 times = [t for t in TIME_ORDER if t in df_long["TimeLabel"].astype(str).unique().tolist()]
 sel_times = st.sidebar.multiselect("Time", times, default=times)
-
-# Add filter for Line (Limit to select only one option)
-lines = sorted(df_long["Line"].dropna().unique().tolist())
-sel_line = st.sidebar.selectbox("Line", lines, index=0)  # Only allow selection of one line
-
 facet_by_location = st.sidebar.toggle("Facet by Location", value=True)
 
 mask = (
@@ -120,7 +107,6 @@ mask = (
     & (df_long["Location"].astype(str).isin(sel_locs))
     & (df_long["Source"].isin(sel_sources))
     & (df_long["TimeLabel"].astype(str).isin(sel_times))
-    & (df_long["Line"] == sel_line)  # Filter by selected line
 )
 
 filtered = df_long.loc[mask].copy()
