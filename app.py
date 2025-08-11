@@ -5,8 +5,8 @@ import pandas as pd
 import streamlit as st
 import plotly.express as px
 
-st.set_page_config(page_title="Interactive Temperature Explorer", layout="wide")
-st.title("📈 Interactive Temperature Explorer")
+st.set_page_config(page_title="CAMCO Station Name Change", layout="wide")
+st.title("📈 CAMCO Station Name Change")
 
 @st.cache_data(show_spinner=False)
 def load_csv_clean(file_or_path, parse_dates=None):
@@ -45,7 +45,7 @@ def to_long(df: pd.DataFrame) -> pd.DataFrame:
         df = df.rename(columns={"Staion": "Station"})
     elif "Station" in df.columns and "Staion" in df.columns:
         df = df.drop(columns=["Staion"])
-    required_id_cols = ["Date", "Station", "Common Location", "Location"]
+    required_id_cols = ["Date", "Station", "Common Location", "Location", "Line"]
     missing = [c for c in required_id_cols if c not in df.columns]
     if missing:
         raise KeyError(f"Missing required column(s): {missing}.")
@@ -55,7 +55,7 @@ def to_long(df: pd.DataFrame) -> pd.DataFrame:
     manual_cols = [c for c in ["Manual07", "Manual11", "Manual14", "Manual16", "Manual18", "Manual21"] if c in df.columns]
     if not bms_cols and not manual_cols:
         raise KeyError("None of the expected reading columns were found.")
-    id_vars = ["Date", "Station", "Common Location", "Location"]
+    id_vars = ["Date", "Station", "Common Location", "Location", "Line"]
     frames = []
     if manual_cols:
         m = df.melt(id_vars=id_vars, value_vars=manual_cols, var_name="Time", value_name="Value")
@@ -98,6 +98,11 @@ sources = sorted(df_long["Source"].unique().tolist())
 sel_sources = st.sidebar.multiselect("Source", sources, default=sources)
 times = [t for t in TIME_ORDER if t in df_long["TimeLabel"].astype(str).unique().tolist()]
 sel_times = st.sidebar.multiselect("Time", times, default=times)
+
+# Add filter for Line (Limit to select only one option)
+lines = sorted(df_long["Line"].dropna().unique().tolist())
+sel_line = st.sidebar.selectbox("Line", lines, index=0)  # Only allow selection of one line
+
 facet_by_location = st.sidebar.toggle("Facet by Location", value=True)
 
 mask = (
@@ -107,6 +112,7 @@ mask = (
     & (df_long["Location"].astype(str).isin(sel_locs))
     & (df_long["Source"].isin(sel_sources))
     & (df_long["TimeLabel"].astype(str).isin(sel_times))
+    & (df_long["Line"] == sel_line)  # Filter by selected line
 )
 
 filtered = df_long.loc[mask].copy()
