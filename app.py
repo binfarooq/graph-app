@@ -5,7 +5,7 @@ import pandas as pd
 import streamlit as st
 import plotly.express as px
 
-st.set_page_config(page_title="CAMCO Station Temperatures 10 Aug 2025", layout="wide")
+st.set_page_config(page_title="CAMCO Station Temperatures-10 Aug 2025", layout="wide")
 st.title("CAMCO Station Temperatures-10 Aug 2025")
 
 @st.cache_data(show_spinner=False)
