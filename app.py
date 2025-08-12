@@ -99,14 +99,15 @@ sel_sources = st.sidebar.multiselect("Source", sources, default=sources)
 times = [t for t in TIME_ORDER if t in df_long["TimeLabel"].astype(str).unique().tolist()]
 sel_times = st.sidebar.multiselect("Time", times, default=times)
 
-# Ensuring the user can facet by location
-facet_by_location = st.sidebar.checkbox("Facet by Location", value=True)
+# Remove faceting - we don't need this
+facet_by_location = False  # No need to toggle facetting by location
 
+# Apply the filter for the selected location
 mask = (
     (df_long["Date"].dt.date >= start_date)
     & (df_long["Date"].dt.date <= end_date)
     & (df_long["Station"] == sel_station)
-    & (df_long["Location"].astype(str) == sel_loc)  # Ensure that only one location is selected
+    & (df_long["Location"].astype(str) == sel_loc)  # Only plot for the selected location
     & (df_long["Source"].isin(sel_sources))
     & (df_long["TimeLabel"].astype(str).isin(sel_times))
 )
@@ -117,32 +118,20 @@ if filtered.empty:
     st.info("No data with current filters.")
     st.stop()
 
-# Plot the data
-facet_col = "Location" if facet_by_location else None
+# Plot the data - Single plot for the selected location (no faceting)
 fig = px.scatter(
     filtered,
     x="Date",
     y="Value",
     color="Source",
     symbol="TimeLabel",
-    facet_col=facet_col,
-    facet_col_wrap=4 if facet_by_location else None,
     hover_data={"Station": True, "Common Location": True, "Location": True, "TimeLabel": True, "Source": True, "Value": ":.1f", "Date": "|%Y-%m-%d"},
 )
 
-if facet_by_location:
-    loc_order = sorted(list(dict.fromkeys(filtered["Location"].astype(str))))
-    columns = 4
-    import math
-    for idx, loc in enumerate(loc_order, start=1):
-        ref = 24 if ("Platform" in str(loc)) else 28
-        row = 1 + (idx - 1) // columns
-        col = 1 + (idx - 1) % columns
-        fig.add_hline(y=ref, line_width=2, line_dash="solid", line_color="red", row=row, col=col)
-else:
-    unique_refs = sorted({24 if ("Platform" in str(l)) else 28 for l in [sel_loc]})  # Now only one location
-    for ref in unique_refs:
-        fig.add_hline(y=ref, line_width=2, line_dash="solid", line_color="red")
+# Add reference line for the location-specific temperature
+unique_refs = sorted({24 if ("Platform" in str(l)) else 28 for l in [sel_loc]})  # Now only one location
+for ref in unique_refs:
+    fig.add_hline(y=ref, line_width=2, line_dash="solid", line_color="red")
 
 fig.update_layout(
     height=700,
