@@ -98,13 +98,15 @@ sources = sorted(df_long["Source"].unique().tolist())
 sel_sources = st.sidebar.multiselect("Source", sources, default=sources)
 times = [t for t in TIME_ORDER if t in df_long["TimeLabel"].astype(str).unique().tolist()]
 sel_times = st.sidebar.multiselect("Time", times, default=times)
-facet_by_location = st.sidebar.toggle("Facet by Location", value=True)
+
+# Ensuring the user can facet by location
+facet_by_location = st.sidebar.checkbox("Facet by Location", value=True)
 
 mask = (
     (df_long["Date"].dt.date >= start_date)
     & (df_long["Date"].dt.date <= end_date)
     & (df_long["Station"] == sel_station)
-    & (df_long["Location"].astype(str) == sel_loc)  # Change here to match only the selected location
+    & (df_long["Location"].astype(str) == sel_loc)  # Ensure that only one location is selected
     & (df_long["Source"].isin(sel_sources))
     & (df_long["TimeLabel"].astype(str).isin(sel_times))
 )
