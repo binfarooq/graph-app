@@ -99,7 +99,7 @@ sel_sources = st.sidebar.multiselect("Source", sources, default=sources)
 times = [t for t in TIME_ORDER if t in df_long["TimeLabel"].astype(str).unique().tolist()]
 sel_times = st.sidebar.multiselect("Time", times, default=times)
 
-# Apply the filter for the selected location (no faceting here)
+# Apply the filter for the selected location (no faceting)
 mask = (
     (df_long["Date"].dt.date >= start_date)
     & (df_long["Date"].dt.date <= end_date)
