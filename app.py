@@ -93,16 +93,13 @@ stations = sorted(df_long["Station"].dropna().astype(str).unique().tolist())
 sel_station = st.sidebar.selectbox("Station", stations, index=0)
 
 avail_locs = sorted(df_long[df_long["Station"].astype(str) == sel_station]["Location"].dropna().astype(str).unique().tolist())
-sel_loc = st.sidebar.selectbox("Location", avail_locs, index=0)  # Changed to selectbox for single selection
+sel_loc = st.sidebar.selectbox("Location", avail_locs, index=0)  # Ensuring a single selection
 sources = sorted(df_long["Source"].unique().tolist())
 sel_sources = st.sidebar.multiselect("Source", sources, default=sources)
 times = [t for t in TIME_ORDER if t in df_long["TimeLabel"].astype(str).unique().tolist()]
 sel_times = st.sidebar.multiselect("Time", times, default=times)
 
-# Remove faceting - we don't need this
-facet_by_location = False  # No need to toggle facetting by location
-
-# Apply the filter for the selected location
+# Apply the filter for the selected location (no faceting here)
 mask = (
     (df_long["Date"].dt.date >= start_date)
     & (df_long["Date"].dt.date <= end_date)
@@ -118,7 +115,7 @@ if filtered.empty:
     st.info("No data with current filters.")
     st.stop()
 
-# Plot the data - Single plot for the selected location (no faceting)
+# Plot the data - Only one plot for the selected location (no faceting)
 fig = px.scatter(
     filtered,
     x="Date",
@@ -128,7 +125,7 @@ fig = px.scatter(
     hover_data={"Station": True, "Common Location": True, "Location": True, "TimeLabel": True, "Source": True, "Value": ":.1f", "Date": "|%Y-%m-%d"},
 )
 
-# Add reference line for the location-specific temperature
+# Add a reference line for the selected location (if applicable)
 unique_refs = sorted({24 if ("Platform" in str(l)) else 28 for l in [sel_loc]})  # Now only one location
 for ref in unique_refs:
     fig.add_hline(y=ref, line_width=2, line_dash="solid", line_color="red")
