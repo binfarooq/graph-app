@@ -93,7 +93,7 @@ stations = sorted(df_long["Station"].dropna().astype(str).unique().tolist())
 sel_station = st.sidebar.selectbox("Station", stations, index=0)
 
 avail_locs = sorted(df_long[df_long["Station"].astype(str) == sel_station]["Location"].dropna().astype(str).unique().tolist())
-sel_locs = st.sidebar.multiselect("Location", avail_locs, default=avail_locs)
+sel_loc = st.sidebar.selectbox("Location", avail_locs, index=0)  # Changed to selectbox for single selection
 sources = sorted(df_long["Source"].unique().tolist())
 sel_sources = st.sidebar.multiselect("Source", sources, default=sources)
 times = [t for t in TIME_ORDER if t in df_long["TimeLabel"].astype(str).unique().tolist()]
@@ -104,7 +104,7 @@ mask = (
     (df_long["Date"].dt.date >= start_date)
     & (df_long["Date"].dt.date <= end_date)
     & (df_long["Station"] == sel_station)
-    & (df_long["Location"].astype(str).isin(sel_locs))
+    & (df_long["Location"].astype(str) == sel_loc)  # Change here to match only the selected location
     & (df_long["Source"].isin(sel_sources))
     & (df_long["TimeLabel"].astype(str).isin(sel_times))
 )
@@ -138,7 +138,7 @@ if facet_by_location:
         col = 1 + (idx - 1) % columns
         fig.add_hline(y=ref, line_width=2, line_dash="solid", line_color="red", row=row, col=col)
 else:
-    unique_refs = sorted({24 if ("Platform" in str(l)) else 28 for l in sel_locs})
+    unique_refs = sorted({24 if ("Platform" in str(l)) else 28 for l in [sel_loc]})  # Now only one location
     for ref in unique_refs:
         fig.add_hline(y=ref, line_width=2, line_dash="solid", line_color="red")
 
