@@ -5,8 +5,8 @@ import pandas as pd
 import streamlit as st
 import plotly.express as px
 
-st.set_page_config(page_title="CAMCO Station Temperatures", layout="wide")
-st.title("CAMCO Station Temperatures")
+st.set_page_config(page_title="CAMCO Station Temperatures 10 Aug 2025", layout="wide")
+st.title("CAMCO Station Temperatures-10 Aug 2025")
 
 @st.cache_data(show_spinner=False)
 def load_csv_clean(file_or_path, parse_dates=None):
